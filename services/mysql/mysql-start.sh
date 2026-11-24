@@ -17,7 +17,9 @@
 #   buffer pool         = MYSQL_BUFFER_POOL_MB, else B/2 (128 MB minimum)
 #   max_connections     = MYSQL_MAX_CONNECTIONS, else B/8 (100..500)
 # plus the settings Railway's own MySQL uses on its volumes (no native AIO, no
-# binary log, no performance_schema) and utf8mb4.
+# binary log, no performance_schema) and utf8mb4. MYSQL_EXTRA_ARGS is checked
+# with mysqld --validate-config first and ignored (with a warning) if mysqld
+# rejects it, so a typo cannot crash-loop the database.
 set -e
 k() { v=$1; if [ $v -lt $2 ]; then v=$2; fi; if [ $v -gt $3 ]; then v=$3; fi; echo $v; }
 n() { case "$1" in ""|*[!0-9]*) echo $2 ;; *) echo $1 ;; esac; }
@@ -30,4 +32,9 @@ P=$(k $(n "$MYSQL_BUFFER_POOL_MB" $(k $((B / 2)) 128 2097152)) 32 4194304)
 C=$(k $(n "$MYSQL_MAX_CONNECTIONS" $(k $((B / 8)) 100 500)) 10 100000)
 echo "mysql-start: budget ${B}MB (container ${M}MB, host ${H}MB), innodb_buffer_pool_size ${P}M, max_connections $C"
 set -f
-exec docker-entrypoint.sh mysqld --innodb-use-native-aio=0 --disable-log-bin --performance-schema=0 --innodb-buffer-pool-size=${P}M --max-connections=$C --character-set-server=utf8mb4 --collation-server=utf8mb4_0900_ai_ci --max-allowed-packet=64M ${MYSQL_EXTRA_ARGS:-}
+X="${MYSQL_EXTRA_ARGS:-}"
+if [ -n "$X" ] && ! mysqld --user=mysql --validate-config $X > /tmp/mysql-validate.log 2>&1; then
+echo "mysql-start: WARNING MYSQL_EXTRA_ARGS rejected by mysqld --validate-config, starting without it: $(grep -m 1 ERROR /tmp/mysql-validate.log)"
+X=""
+fi
+exec docker-entrypoint.sh mysqld --innodb-use-native-aio=0 --disable-log-bin --performance-schema=0 --innodb-buffer-pool-size=${P}M --max-connections=$C --character-set-server=utf8mb4 --collation-server=utf8mb4_0900_ai_ci --max-allowed-packet=64M $X

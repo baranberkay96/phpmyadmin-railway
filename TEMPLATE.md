@@ -53,11 +53,24 @@ Kept: official `phpmyadmin` image with `PMA_HOST`/`PMA_PORT` on the private netw
 
 ## Resource estimate
 
-RESOURCE_PLACEHOLDER
+Measured on the test deploy (2026-11-24): phpMyAdmin 42-59 MiB idle. MySQL: 680-780 MiB with an 8 GB container limit (buffer pool auto-sized to 3.8 GB, partly touched at start); **370 MiB with a simulated Trial limit of 1 GB** (pool 476 MB, `serviceInstanceLimitsUpdate`). CPU < 0.02 vCPU idle.
+
+| Service | Idle RAM | Typical RAM | CPU |
+|---|---|---|---|
+| phpMyAdmin | 45 MB | 60-300 MB (imports/exports, up to `PMA_APACHE_WORKERS` × `MEMORY_LIMIT`) | < 0.01 idle |
+| MySQL | 370 MB (1 GB plan) to 750 MB (8 GB plan) | up to the buffer pool + ~300 MB | 0.01-0.5 |
+
+Estimated cost: idle ≈ $4-8/month (0.4-0.8 GB RAM + ~1 GB volume); typical ≈ $8-15/month. Minimum plan: **Trial** runs it (MySQL sizes itself to the 1 GB limit, measured 370 MiB); Hobby recommended for real data. Lower `MYSQL_MEMORY_LIMIT_MB` to shrink MySQL on large plans.
 
 ## Verification checklist
 
-CHECKLIST_PLACEHOLDER
+- [x] Both services SUCCESS; `/` 200 (login page).
+- [x] Cookie login as `railway` with `MYSQL_PASSWORD` works; wrong password refused; `root` refused while `PMA_ALLOW_ROOT=false`, accepted after setting it to `true`.
+- [x] Through phpMyAdmin: `CREATE TABLE`, `INSERT`, `SELECT` in database `railway` (MySQL 8.4.13, caching_sha2_password works with PHP mysqlnd).
+- [x] MySQL redeploy: data kept.
+- [x] `MYSQL_EXTRA_ARGS=--bogus-option` and `MYSQL_BUFFER_POOL_MB=abc` (STANDARD 8.29): MySQL SUCCESS; `mysqld --validate-config` rejected the option, a warning was logged and MySQL started without it; pool fell back to auto. `--sql-mode=TRADITIONAL` was accepted.
+- [x] 1 GB memory limit (Trial simulation): pool 476 MB, max_connections 119, 370 MiB steady.
+- [ ] Post-publish deploy by the real template id (`ship.py publish`).
 
 ## Open questions
 

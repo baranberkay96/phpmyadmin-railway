@@ -34,7 +34,8 @@ W=$(n "$PMA_APACHE_WORKERS" 10)
 if [ $W -lt 2 ]; then W=2; fi
 if [ $W -gt 256 ]; then W=256; fi
 A=/etc/apache2/conf-enabled/zz-railway.conf
-echo "ServerTokens Prod" > $A
+echo "ServerName localhost" > $A
+echo "ServerTokens Prod" >> $A
 echo "ServerSignature Off" >> $A
 echo "<IfModule mpm_prefork_module>" >> $A
 echo "StartServers 2" >> $A
