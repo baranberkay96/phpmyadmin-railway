@@ -70,7 +70,7 @@ Estimated cost: idle ≈ $4-8/month (0.4-0.8 GB RAM + ~1 GB volume); typical ≈
 - [x] MySQL redeploy: data kept.
 - [x] `MYSQL_EXTRA_ARGS=--bogus-option` and `MYSQL_BUFFER_POOL_MB=abc` (STANDARD 8.29): MySQL SUCCESS; `mysqld --validate-config` rejected the option, a warning was logged and MySQL started without it; pool fell back to auto. `--sql-mode=TRADITIONAL` was accepted.
 - [x] 1 GB memory limit (Trial simulation): pool 476 MB, max_connections 119, 370 MiB steady.
-- [ ] Post-publish deploy by the real template id (`ship.py publish`).
+- [x] Post-publish deploy by the real template id: PASS (2026-11-24).
 
 ## Open questions
 
