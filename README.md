@@ -1,5 +1,7 @@
 # Deploy and Host phpMyAdmin with Railway
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/phpmyadmin-52-with-mysql-84-lts?referralCode=20H68q)
+
 phpMyAdmin is the classic web interface for MySQL and MariaDB. This template deploys phpMyAdmin 5.2 with cookie login, connected over Railway's private network to a bundled MySQL 8.4 LTS database, so you can create tables, run SQL and import dumps from your browser minutes after deploying. It can manage any existing Railway MySQL or MariaDB too.
 
 ## About Hosting phpMyAdmin
