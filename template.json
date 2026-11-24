@@ -1,0 +1,184 @@
+{
+  "name": "phpMyAdmin 5.2 with MySQL 8.4 LTS",
+  "description": "MySQL web admin with its own login, plus a ready MySQL 8.4 LTS database.",
+  "category": "Storage",
+  "tags": [
+    "phpmyadmin",
+    "mysql",
+    "database",
+    "admin",
+    "gui",
+    "sql",
+    "lts"
+  ],
+  "image": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/phpmyadmin.svg",
+  "upstream": {
+    "phpmyadmin": "phpmyadmin:5.2.3-apache@sha256:1195ef91dedae0429dd8c1ae3e7e438ce83356f4bb03b8a03e6934f5a8c1a006 (phpMyAdmin 5.2.3, image rebuilt 2026-11-24)",
+    "mysql": "mysql:8.4.13@sha256:8c233bad33d520a7aae1c1e619c3a9775f4a1ba2d463d692fada04ec7f40be00 (MySQL 8.4 LTS)",
+    "checked": "2026-11-24"
+  },
+  "services": {
+    "phpMyAdmin": {
+      "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/phpmyadmin.svg",
+      "source": {
+        "image": "phpmyadmin:5.2.3-apache@sha256:1195ef91dedae0429dd8c1ae3e7e438ce83356f4bb03b8a03e6934f5a8c1a006"
+      },
+      "startCommand": "/bin/bash -c 'set -e; n() { case \"$1\" in \"\"|*[!0-9]*) echo $2 ;; *) echo $1 ;; esac; }; E=/etc/apache2/mods-enabled; N=$(ls $E/mpm_*.load 2>/dev/null | wc -l | tr -d \" \"); if [ \"$N\" -ne 1 ] || [ ! -e $E/mpm_prefork.load ]; then echo \"pma-start: $N Apache MPM modules enabled, keeping mpm_prefork only\"; rm -f $E/mpm_*.load $E/mpm_*.conf; a2enmod -q mpm_prefork; fi; W=$(n \"$PMA_APACHE_WORKERS\" 10); if [ $W -lt 2 ]; then W=2; fi; if [ $W -gt 256 ]; then W=256; fi; A=/etc/apache2/conf-enabled/zz-railway.conf; echo \"ServerTokens Prod\" > $A; echo \"ServerSignature Off\" >> $A; echo \"<IfModule mpm_prefork_module>\" >> $A; echo \"StartServers 2\" >> $A; echo \"MinSpareServers 1\" >> $A; echo \"MaxSpareServers 4\" >> $A; echo \"ServerLimit $W\" >> $A; echo \"MaxRequestWorkers $W\" >> $A; echo \"MaxConnectionsPerChild 500\" >> $A; echo \"</IfModule>\" >> $A; I=\"${PHP_INI_DIR:-/usr/local/etc/php}/conf.d/zz-railway.ini\"; echo \"display_errors = Off\" > $I; echo \"log_errors = On\" >> $I; echo \"expose_php = Off\" >> $I; echo \"pma-start: Apache prefork MaxRequestWorkers $W, PMA_HOST ${PMA_HOST:-unset}:${PMA_PORT:-3306}, root login ${PMA_ALLOW_ROOT:-false}\"; exec /docker-entrypoint.sh apache2-foreground' pma-start",
+      "healthcheckPath": "/",
+      "healthcheckTimeout": 300,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10,
+      "publicDomain": true,
+      "targetPort": 80,
+      "tcpProxy": null,
+      "variables": {
+        "PORT": {
+          "defaultValue": "80",
+          "description": "Port Apache listens on; the public domain and the healthcheck use it.",
+          "required": false
+        },
+        "PMA_HOST": {
+          "defaultValue": "${{MySQL.RAILWAY_PRIVATE_DOMAIN}}",
+          "description": "MySQL/MariaDB host phpMyAdmin connects to (private network). Point it at another Railway database to manage that one.",
+          "required": false
+        },
+        "PMA_PORT": {
+          "defaultValue": "${{MySQL.MYSQLPORT}}",
+          "description": "Port of that host.",
+          "required": false
+        },
+        "PMA_ABSOLUTE_URI": {
+          "defaultValue": "https://${{RAILWAY_PUBLIC_DOMAIN}}/",
+          "description": "Public URL of phpMyAdmin (keeps redirects on HTTPS).",
+          "required": false
+        },
+        "PMA_ALLOW_ROOT": {
+          "defaultValue": "false",
+          "description": "true allows the MySQL root account to log in through the web UI (needed for server-wide admin, or for Railway's MySQL template whose user is root).",
+          "required": false
+        },
+        "PMA_APACHE_WORKERS": {
+          "defaultValue": "10",
+          "description": "Maximum concurrent Apache/PHP workers (each up to MEMORY_LIMIT).",
+          "required": false
+        },
+        "UPLOAD_LIMIT": {
+          "defaultValue": "64M",
+          "description": "Largest file the Import tab accepts (PHP upload and POST size).",
+          "required": false
+        },
+        "MEMORY_LIMIT": {
+          "defaultValue": "512M",
+          "description": "PHP memory limit per request (large imports and exports).",
+          "required": false
+        },
+        "HIDE_PHP_VERSION": {
+          "defaultValue": "true",
+          "description": "Do not send the PHP version in HTTP headers.",
+          "required": false
+        },
+        "PMA_USER_CONFIG_BASE64": {
+          "defaultValue": "PD9waHAKLyoKICogcGhwTXlBZG1pbiBzZXR0aW5ncyBhZGRlZCBieSB0aGUgUmFpbHdheSB0ZW1wbGF0ZSAicGhwTXlBZG1pbiA1LjIgd2l0aAogKiBNeVNRTCA4LjQgTFRTIi4KICoKICogVGhlIG9mZmljaWFsIGltYWdlJ3MgL2V0Yy9waHBteWFkbWluL2NvbmZpZy5pbmMucGhwIGNvbmZpZ3VyZXMgb25lIHNlcnZlcgogKiBmcm9tIFBNQV9IT1NUIC8gUE1BX1BPUlQgKGNvb2tpZSBsb2dpbiwgYXJiaXRyYXJ5IHNlcnZlcnMgb25seSB3aGVuCiAqIFBNQV9BUkJJVFJBUlk9MSkgYW5kIHRoZW4gaW5jbHVkZXMgL2V0Yy9waHBteWFkbWluL2NvbmZpZy51c2VyLmluYy5waHAgd2l0aAogKiAkaSBwb2ludGluZyBhdCB0aGF0IHNlcnZlci4gVGhlIGltYWdlJ3MgZW50cnlwb2ludCB3cml0ZXMgdGhpcyBmaWxlIHRoZXJlCiAqIGZyb20gdGhlIFBNQV9VU0VSX0NPTkZJR19CQVNFNjQgdmFyaWFibGUgYXQgZXZlcnkgc3RhcnQuCiAqCiAqIEVkaXQgdGhpcyBmaWxlLCB0aGVuIHJ1biBgcHl0aG9uMyAuLi90by10ZW1wbGF0ZS5weSAtLXdyaXRlYCB0byByZWZyZXNoCiAqIFBNQV9VU0VSX0NPTkZJR19CQVNFNjQgaW4gdGVtcGxhdGUuanNvbi4KICovCgokcmFpbHdheUVudlRydWUgPSBbJzEnLCAndHJ1ZScsICd5ZXMnLCAnb24nXTsKCi8qCiAqIEFwcGxpZWQgdG8gZXZlcnkgY29uZmlndXJlZCBzZXJ2ZXIgKFBNQV9IT1NULCBvciBlYWNoIGVudHJ5IG9mIFBNQV9IT1NUUyk6CiAqIC0gcm9vdCBjYW5ub3QgbG9nIGluIHRocm91Z2ggdGhlIHdlYiBVSSB1bmxlc3MgUE1BX0FMTE9XX1JPT1Q9dHJ1ZTsKICogLSBldmVyeSBsb2dpbiBuZWVkcyBhIHBhc3N3b3JkICh0aGUgaW1hZ2UncyBjb25maWcuaW5jLnBocCBhbGxvd3MgZW1wdHkgb25lcyk7CiAqIC0gaG9zdCBuYW1lcyBhbmQgZHJpdmVyIGVycm9ycyBhcmUgbm90IHNob3duIG9uIHRoZSBsb2dpbiBwYWdlLgogKi8KJHJhaWx3YXlBbGxvd1Jvb3QgPSBpbl9hcnJheSgKICAgIHN0cnRvbG93ZXIodHJpbSgoc3RyaW5nKSBnZXRlbnYoJ1BNQV9BTExPV19ST09UJykpKSwKICAgICRyYWlsd2F5RW52VHJ1ZSwKICAgIHRydWUKKTsKZm9yZWFjaCAoYXJyYXlfa2V5cygkY2ZnWydTZXJ2ZXJzJ10pIGFzICRyYWlsd2F5U2VydmVyKSB7CiAgICAkY2ZnWydTZXJ2ZXJzJ11bJHJhaWx3YXlTZXJ2ZXJdWydBbGxvd1Jvb3QnXSA9ICRyYWlsd2F5QWxsb3dSb290OwogICAgJGNmZ1snU2VydmVycyddWyRyYWlsd2F5U2VydmVyXVsnQWxsb3dOb1Bhc3N3b3JkJ10gPSBmYWxzZTsKICAgICRjZmdbJ1NlcnZlcnMnXVskcmFpbHdheVNlcnZlcl1bJ2hpZGVfY29ubmVjdGlvbl9lcnJvcnMnXSA9IHRydWU7Cn0KCi8qIE5ldmVyIG9mZmVyIGEgZnJlZS10ZXh0IHNlcnZlciBmaWVsZCwgd2hhdGV2ZXIgUE1BX0FSQklUUkFSWSBzYXlzLiAqLwokY2ZnWydBbGxvd0FyYml0cmFyeVNlcnZlciddID0gZmFsc2U7CgovKiBGYWlsZWQgbG9naW5zIGFyZSB3cml0dGVuIHRvIHRoZSBzZXJ2aWNlIGxvZyAoInVzZXIgZGVuaWVkOiAuLi4iKS4gKi8KJGNmZ1snQXV0aExvZyddID0gJ3BocCc7CiRjZmdbJ0F1dGhMb2dTdWNjZXNzJ10gPSBmYWxzZTsKCi8qIE5vIGVycm9yIHJlcG9ydHMgdG8gcGhwbXlhZG1pbi5uZXQsIG5vIEdpdCByZXZpc2lvbiBvciBwaHBpbmZvKCkgaW4gdGhlIFVJLiAqLwokY2ZnWydTZW5kRXJyb3JSZXBvcnRzJ10gPSAnbmV2ZXInOwokY2ZnWydTaG93R2l0UmV2aXNpb24nXSA9IGZhbHNlOwokY2ZnWydTaG93UGhwSW5mbyddID0gZmFsc2U7Cgp1bnNldCgkcmFpbHdheUVudlRydWUsICRyYWlsd2F5QWxsb3dSb290LCAkcmFpbHdheVNlcnZlcik7Cg==",
+          "description": "Template hardening for phpMyAdmin (root login switch, no empty passwords, no free-text server field, failed logins logged). Base64 of services/phpmyadmin/config.user.inc.php; the image writes it at start.",
+          "required": false
+        }
+      }
+    },
+    "MySQL": {
+      "icon": "https://devicons.railway.app/i/mysql.svg",
+      "source": {
+        "image": "mysql:8.4.13@sha256:8c233bad33d520a7aae1c1e619c3a9775f4a1ba2d463d692fada04ec7f40be00"
+      },
+      "startCommand": "/bin/bash -c 'set -e; k() { v=$1; if [ $v -lt $2 ]; then v=$2; fi; if [ $v -gt $3 ]; then v=$3; fi; echo $v; }; n() { case \"$1\" in \"\"|*[!0-9]*) echo $2 ;; *) echo $1 ;; esac; }; H=$(( $(n \"$(grep -m 1 MemTotal /proc/meminfo | tr -s \" \" | cut -d \" \" -f 2)\" 1048576) / 1024 )); L=$(cat /sys/fs/cgroup/memory.max 2>/dev/null || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null || echo max); M=$(( $(n \"$L\" $((H * 1048576))) / 1048576 )); if [ $M -gt $H ]; then M=$H; fi; B=$(k $(n \"$MYSQL_MEMORY_LIMIT_MB\" $(k $M 256 8192)) 256 4194304); P=$(k $(n \"$MYSQL_BUFFER_POOL_MB\" $(k $((B / 2)) 128 2097152)) 32 4194304); C=$(k $(n \"$MYSQL_MAX_CONNECTIONS\" $(k $((B / 8)) 100 500)) 10 100000); echo \"mysql-start: budget ${B}MB (container ${M}MB, host ${H}MB), innodb_buffer_pool_size ${P}M, max_connections $C\"; set -f; exec docker-entrypoint.sh mysqld --innodb-use-native-aio=0 --disable-log-bin --performance-schema=0 --innodb-buffer-pool-size=${P}M --max-connections=$C --character-set-server=utf8mb4 --collation-server=utf8mb4_0900_ai_ci --max-allowed-packet=64M ${MYSQL_EXTRA_ARGS:-}' mysql-start",
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10,
+      "publicDomain": false,
+      "tcpProxy": null,
+      "volume": {
+        "mountPath": "/var/lib/mysql"
+      },
+      "variables": {
+        "MYSQL_ROOT_PASSWORD": {
+          "defaultValue": "${{secret(32, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\")}}",
+          "description": "Root password (generated). Set on the first start only.",
+          "required": false
+        },
+        "MYSQL_DATABASE": {
+          "defaultValue": "railway",
+          "description": "Database created on the first start.",
+          "required": false
+        },
+        "MYSQL_USER": {
+          "defaultValue": "railway",
+          "description": "App user created on the first start with all privileges on MYSQL_DATABASE. Log in to phpMyAdmin with it.",
+          "required": false
+        },
+        "MYSQL_PASSWORD": {
+          "defaultValue": "${{secret(32, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\")}}",
+          "description": "Password of MYSQL_USER (generated). Set on the first start only.",
+          "required": false
+        },
+        "MYSQLHOST": {
+          "defaultValue": "${{RAILWAY_PRIVATE_DOMAIN}}",
+          "description": "Railway private domain name.",
+          "required": false
+        },
+        "MYSQLPORT": {
+          "defaultValue": "3306",
+          "description": "MySQL port.",
+          "required": false
+        },
+        "MYSQLUSER": {
+          "defaultValue": "root",
+          "description": "MySQL user for the Railway Data panel.",
+          "required": false
+        },
+        "MYSQLPASSWORD": {
+          "defaultValue": "${{MYSQL_ROOT_PASSWORD}}",
+          "description": "Root password for the Railway Data panel.",
+          "required": false
+        },
+        "MYSQLDATABASE": {
+          "defaultValue": "${{MYSQL_DATABASE}}",
+          "description": "Default database for the Railway Data panel.",
+          "required": false
+        },
+        "MYSQL_URL": {
+          "defaultValue": "mysql://${{MYSQL_USER}}:${{MYSQL_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:3306/${{MYSQL_DATABASE}}",
+          "description": "Private connection URL (app user) for other services in this project.",
+          "required": false
+        },
+        "MYSQL_ROOT_URL": {
+          "defaultValue": "mysql://root:${{MYSQL_ROOT_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:3306/${{MYSQL_DATABASE}}",
+          "description": "Private connection URL as root.",
+          "required": false
+        },
+        "MYSQL_MEMORY_LIMIT_MB": {
+          "defaultValue": "auto",
+          "description": "Memory budget for sizing InnoDB (auto = container limit, capped at 8192).",
+          "required": false
+        },
+        "MYSQL_BUFFER_POOL_MB": {
+          "defaultValue": "auto",
+          "description": "innodb_buffer_pool_size in MB (auto = half the budget).",
+          "required": false
+        },
+        "MYSQL_MAX_CONNECTIONS": {
+          "defaultValue": "auto",
+          "description": "max_connections (auto = budget/8, 100..500).",
+          "required": false
+        },
+        "MYSQL_EXTRA_ARGS": {
+          "defaultValue": "",
+          "description": "Extra mysqld options appended to the command line, e.g. --sql-mode=TRADITIONAL.",
+          "required": false
+        },
+        "RAILWAY_DEPLOYMENT_DRAINING_SECONDS": {
+          "defaultValue": "60",
+          "description": "Allow MySQL to shut down cleanly.",
+          "required": false
+        }
+      }
+    }
+  }
+}
